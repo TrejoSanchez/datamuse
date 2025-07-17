@@ -22,26 +22,42 @@ async function cargarSalasEnSelect() {
 }
 
 // Cargar tabla de obras
-export async function cargarObrasTabla() {
-  const obras = await obtenerTodasLasObras();
-  const tbody = document.getElementById("tabla-obras");
-  tbody.innerHTML = "";
+import { db } from "../firebaseConfig.js";
+import { collection, getDocs } from "firebase/firestore";
 
-  obras.forEach(obra => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
+// Función para cargar obras y mostrar nombre de sala
+export async function mostrarObras() {
+  const obrasSnapshot = await getDocs(collection(db, 'figuras'));
+  const salasSnapshot = await getDocs(collection(db, 'salas'));
+
+  // Mapeamos IDs de salas a sus nombres
+  const mapaSalas = {};
+  salasSnapshot.forEach((doc) => {
+    mapaSalas[doc.id] = doc.data().nombre;
+  });
+
+  const tabla = document.getElementById("tabla-obras");
+  tabla.innerHTML = ""; // Limpiar tabla
+
+  obrasSnapshot.forEach((doc) => {
+    const obra = doc.data();
+    const nombreSala = mapaSalas[obra.salaId] || "Sin asignar";
+
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
       <td>${obra.nombre}</td>
       <td>${obra.descripcion}</td>
-      <td><img src="${obra.imagenUrl}" width="60" /></td>
-      <td>${obra.salaId}</td>
+      <td><img src="${obra.imagenUrl}" width="100" /></td>
+      <td>${nombreSala}</td>
       <td>
-        <button onclick="editarObra('${obra.id}', '${obra.nombre}', '${obra.descripcion}', '${obra.imagenUrl}', '${obra.salaId}')">✏️</button>
-        <button onclick="eliminarObra('${obra.id}')">🗑️</button>
+        <button onclick="editarObra('${doc.id}')">Editar</button>
+        <button onclick="eliminarObra('${doc.id}')">Eliminar</button>
       </td>
     `;
-    tbody.appendChild(tr);
+    tabla.appendChild(fila);
   });
 }
+
 
 // Guardar nueva obra
 export function configurarFormularioObra() {
